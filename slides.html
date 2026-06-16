@@ -469,37 +469,21 @@
   /* Fork Y-shape */
   .pipeline-fork {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: stretch;
     z-index: 1;
   }
 
-  .fork-branch {
-    display: flex;
-    align-items: center;
-  }
-
-  .fork-line {
-    width: 55px;
-    height: 3px;
+  .fork-svg {
+    width: 64px;
     flex-shrink: 0;
-    border-radius: 2px;
-    margin-right: 4px;
+    align-self: stretch;
   }
 
-  .fork-branch.top .fork-line {
-    background: var(--ci-green);
-    transform: rotate(-18deg);
-    transform-origin: left center;
-    box-shadow: 0 0 8px rgba(63, 185, 80, 0.3);
-  }
-
-  .fork-branch.bottom .fork-line {
-    background: var(--blood-red);
-    transform: rotate(18deg);
-    transform-origin: left center;
-    box-shadow: 0 0 8px rgba(255, 45, 45, 0.3);
+  .fork-boxes {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    justify-content: center;
   }
 
   .pipeline-fork .pipeline-step {
@@ -983,15 +967,17 @@ public function testTotalWithTax(): void
     </div>
     <div class="fragment pipeline-connector"></div>
     <div class="fragment pipeline-fork">
-      <div class="fork-branch top">
-        <div class="fork-line"></div>
+      <svg class="fork-svg" viewBox="0 0 70 100" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="0" y1="50" x2="26" y2="50" stroke="#3a4a40" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+        <line x1="26" y1="50" x2="70" y2="22" stroke="#3fb950" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+        <line x1="26" y1="50" x2="70" y2="78" stroke="#ff2d2d" stroke-width="2.5" vector-effect="non-scaling-stroke"/>
+        <circle cx="26" cy="50" r="3.2" fill="#3a4a40"/>
+      </svg>
+      <div class="fork-boxes">
         <div class="pipeline-step killed">
           <span class="step-icon">💀</span>
           Killed
         </div>
-      </div>
-      <div class="fork-branch bottom">
-        <div class="fork-line"></div>
         <div class="pipeline-step escaped">
           <span class="step-icon">🏃</span>
           Escaped
