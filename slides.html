@@ -113,6 +113,7 @@
     padding: 18px 24px;
     font-size: 0.48em;
     width: 100%;
+    box-sizing: border-box;
     text-align: left;
     box-shadow:
       0 4px 24px rgba(0, 0, 0, 0.6),
@@ -562,7 +563,7 @@
     margin-top: 16px;
   }
 
-  .two-cols .col { flex: 1; }
+  .two-cols .col { flex: 1; min-width: 0; }
 
   /* ── Problem → Solution ── */
   .problem-solution {
