@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infectez votre code, immunisez votre prod</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/highlight/monokai.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --toxic-green: #39ff14;
+    --green-dim: #1a3a1a;
+    --blood-red: #ff2d2d;
+    --soft-red: #ff6b6b;
+    --bg-dark: #07090a;
+    --bg-card: #0d1214;
+    --bg-surface: #111819;
+    --border: #1c2a2a;
+    --text-main: #d8e0db;
+    --text-dim: #5c7268;
+    --ci-green: #3fb950;
+    --ci-red: #f85149;
+    --glow-green: rgba(57, 255, 20, 0.12);
+    --glow-red: rgba(255, 45, 45, 0.12);
+  }
+
+  /* ── Noise grain overlay ── */
+  .reveal::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px;
+  }
+
+  /* ── Reset ── */
+  html, body { margin: 0; padding: 0; overflow: hidden; }
+
+  /* ── Base ── */
+  .reveal {
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text-main);
+    font-size: 40px;
+  }
+
+
+  .reveal .slides {
+    text-align: center;
+    background:
+      radial-gradient(ellipse at 15% 80%, rgba(57, 255, 20, 0.03) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 15%, rgba(57, 255, 20, 0.02) 0%, transparent 40%),
+      radial-gradient(ellipse at 50% 50%, rgba(57, 255, 20, 0.008) 0%, transparent 70%);
+  }
+
+  .reveal .slides section {
+    padding: 24px 40px;
+    box-sizing: border-box;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 16px;
+  }
+
+  .reveal .slides section > * {
+    flex-shrink: 0;
+  }
+
+  /* ── Typography ── */
+  .reveal h1, .reveal h2, .reveal h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    text-transform: none;
+    letter-spacing: -0.03em;
+  }
+
+  .reveal h1 {
+    font-size: 2.6em;
+    line-height: 1.05;
+  }
+
+  .reveal h2 {
+    font-size: 1.55em;
+    margin-bottom: 0.5em;
+    background: linear-gradient(135deg, var(--text-main) 0%, var(--text-dim) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .reveal h3 {
+    font-size: 1.1em;
+    color: var(--toxic-green);
+    margin-bottom: 0.4em;
+    font-weight: 700;
+  }
+
+  /* ── Code ── */
+  .reveal code, .reveal pre {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .reveal pre {
+    background: linear-gradient(180deg, #0c1117 0%, #080d12 100%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 24px;
+    font-size: 0.48em;
+    width: 100%;
+    text-align: left;
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    position: relative;
+  }
+
+  .reveal pre::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(57, 255, 20, 0.15), transparent);
+  }
+
+  .reveal pre code {
+    max-height: none;
+    line-height: 1.5;
+  }
+
+  .reveal .slides section[data-background-color] {
+    /* Override for colored backgrounds */
+  }
+
+  /* ── Title slide ── */
+  .title-slide {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    position: relative;
+  }
+
+  .title-slide::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 40%, rgba(57, 255, 20, 0.06) 0%, transparent 55%),
+      radial-gradient(circle at 20% 70%, rgba(57, 255, 20, 0.03) 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(57, 255, 20, 0.02) 0%, transparent 35%);
+    pointer-events: none;
+  }
+
+  .title-slide .virus-icon {
+    font-size: 3.5em;
+    display: block;
+    margin-bottom: 0.2em;
+    filter: drop-shadow(0 0 30px rgba(57, 255, 20, 0.4));
+    animation: float-virus 4s ease-in-out infinite;
+  }
+
+  @keyframes float-virus {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(5deg); }
+  }
+
+  .title-slide h1 {
+    color: var(--toxic-green);
+    font-size: 2.4em;
+    margin-bottom: 0.15em;
+    text-shadow:
+      0 0 40px rgba(57, 255, 20, 0.3),
+      0 0 100px rgba(57, 255, 20, 0.1);
+    -webkit-text-fill-color: unset;
+    background: none;
+    line-height: 1.1;
+    position: relative;
+  }
+
+  .title-slide .title-divider {
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--toxic-green), transparent);
+    margin: 16px auto 20px;
+    box-shadow: 0 0 12px rgba(57, 255, 20, 0.3);
+  }
+
+  .title-slide .subtitle {
+    color: var(--text-dim);
+    font-size: 0.6em;
+    font-style: italic;
+    margin-bottom: 2.5em;
+    font-weight: 300;
+    max-width: 600px;
+  }
+
+  .title-slide .author {
+    color: #3a4a40;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.45em;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 8px 24px;
+    border: 1px solid #1a2420;
+    border-radius: 30px;
+  }
+
+  .title-slide .title-mutants {
+    position: absolute;
+    bottom: 26px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  .title-slide .title-mutants img {
+    width: 76px;
+    height: 100px;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 8px;
+    border: 1px solid var(--blood-red);
+    box-shadow: 0 0 14px rgba(255, 45, 45, 0.25);
+    opacity: 0.9;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  .title-slide .title-mutants img:hover { opacity: 1; transform: translateY(-5px); }
+
+  /* ── Big statement slides ── */
+  .big-statement {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .big-statement h1 {
+    font-size: 3em;
+    color: var(--text-main);
+    -webkit-text-fill-color: unset;
+    background: none;
+  }
+
+  .big-statement .dim {
+    color: var(--text-dim);
+  }
+
+  /* ── L'aveu ── */
+  .aveu-slide {
+    position: relative;
+  }
+
+  .aveu-slide::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 55%, rgba(255, 45, 45, 0.05) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .aveu-meme {
+    margin-top: 28px;
+    border-radius: 12px;
+    max-height: 280px;
+    object-fit: contain;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
+  }
+
+  .aveu-prelude {
+    font-size: 1.2em !important;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .aveu-text {
+    font-size: 4.5em !important;
+    line-height: 1.05 !important;
+    color: var(--text-main) !important;
+    letter-spacing: -0.04em;
+  }
+
+  .aveu-chiant {
+    display: inline-block;
+    color: var(--blood-red) !important;
+    -webkit-text-fill-color: var(--blood-red) !important;
+    text-shadow:
+      0 0 40px rgba(255, 45, 45, 0.4),
+      0 0 100px rgba(255, 45, 45, 0.15);
+    animation: pulse-red 2s ease-in-out infinite;
+    font-style: italic;
+  }
+
+  @keyframes pulse-red {
+    0%, 100% { text-shadow: 0 0 30px rgba(255, 45, 45, 0.3), 0 0 80px rgba(255, 45, 45, 0.1); }
+    50% { text-shadow: 0 0 50px rgba(255, 45, 45, 0.5), 0 0 120px rgba(255, 45, 45, 0.2); }
+  }
+
+  /* ── CI simulation ── */
+  .ci-block {
+    background: linear-gradient(135deg, #0f161d 0%, #0a1015 100%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 24px;
+    margin: 12px auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.58em;
+    line-height: 1.7;
+    text-align: left;
+    max-width: 100%;
+    position: relative;
+  }
+
+  .ci-block::before {
+    content: '●  ●  ●';
+    display: block;
+    font-size: 0.55em;
+    color: #2a3540;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+  }
+
+  .ci-block .ci-pass { color: var(--ci-green); }
+  .ci-block .ci-fail { color: var(--ci-red); }
+  .ci-block .ci-dim { color: #4a5568; }
+
+  /* ── Slack simulation ── */
+  .slack-block {
+    background: linear-gradient(135deg, #14181c 0%, #0f1215 100%);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 14px auto;
+    border-left: 3px solid var(--blood-red);
+    text-align: left;
+    max-width: 100%;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .slack-msg {
+    font-size: 0.58em;
+    margin: 10px 0;
+    line-height: 1.5;
+  }
+
+  .slack-msg .slack-user {
+    font-weight: 700;
+    color: var(--soft-red);
+    margin-right: 8px;
+  }
+
+  .slack-msg .slack-text { color: #c1c8cf; }
+
+  /* ── Dialogue ── */
+  .dialogue {
+    font-size: 0.72em;
+    line-height: 1.8;
+    text-align: left;
+  }
+
+  .dialogue .line {
+    margin: 14px 0;
+    padding: 10px 20px;
+    border-left: 3px solid #1c2c24;
+    color: var(--text-dim);
+    border-radius: 0 6px 6px 0;
+    transition: all 0.3s ease;
+  }
+
+  .dialogue .line.active {
+    border-left-color: var(--toxic-green);
+    color: var(--text-main);
+    background: rgba(57, 255, 20, 0.03);
+  }
+
+  /* ── Pipeline diagram ── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 16px 0;
+    font-size: 0.65em;
+    flex-grow: 1;
+    position: relative;
+  }
+
+  .pipeline-step {
+    position: relative;
+    z-index: 1;
+    background: var(--bg-surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 28px;
+    text-align: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.05em;
+    min-width: 130px;
+  }
+
+  .pipeline-step .step-icon {
+    display: block;
+    font-size: 1.8em;
+    margin-bottom: 6px;
+  }
+
+  .pipeline-step .step-label {
+    display: block;
+    font-size: 0.7em;
+    color: var(--text-dim);
+    font-weight: 400;
+    font-family: 'DM Sans', sans-serif;
+    margin-top: 4px;
+  }
+
+  /* Connectors */
+  .pipeline-connector {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--border), var(--toxic-green));
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(57, 255, 20, 0.15);
+  }
+
+  .pipeline-connector::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid var(--toxic-green);
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    filter: drop-shadow(0 0 4px rgba(57, 255, 20, 0.3));
+  }
+
+  /* Mutant step */
+  .pipeline-step.mutant {
+    border-color: var(--toxic-green);
+    color: var(--toxic-green);
+    background: rgba(57, 255, 20, 0.06);
+    box-shadow:
+      0 0 30px rgba(57, 255, 20, 0.15),
+      inset 0 0 30px rgba(57, 255, 20, 0.04);
+    animation: pulse-green 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 20px rgba(57, 255, 20, 0.1), inset 0 0 20px rgba(57, 255, 20, 0.03); }
+    50% { box-shadow: 0 0 50px rgba(57, 255, 20, 0.3), 0 0 100px rgba(57, 255, 20, 0.08), inset 0 0 30px rgba(57, 255, 20, 0.05); }
+  }
+
+  /* Fork Y-shape */
+  .pipeline-fork {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    z-index: 1;
+  }
+
+  .fork-branch {
+    display: flex;
+    align-items: center;
+  }
+
+  .fork-line {
+    width: 55px;
+    height: 3px;
+    flex-shrink: 0;
+    border-radius: 2px;
+    margin-right: 4px;
+  }
+
+  .fork-branch.top .fork-line {
+    background: var(--ci-green);
+    transform: rotate(-18deg);
+    transform-origin: left center;
+    box-shadow: 0 0 8px rgba(63, 185, 80, 0.3);
+  }
+
+  .fork-branch.bottom .fork-line {
+    background: var(--blood-red);
+    transform: rotate(18deg);
+    transform-origin: left center;
+    box-shadow: 0 0 8px rgba(255, 45, 45, 0.3);
+  }
+
+  .pipeline-fork .pipeline-step {
+    min-width: auto;
+    padding: 14px 24px;
+  }
+
+  .pipeline-fork .pipeline-step.killed {
+    border-color: var(--ci-green);
+    color: var(--ci-green);
+    background: rgba(63, 185, 80, 0.06);
+  }
+
+  .pipeline-fork .pipeline-step.escaped {
+    border-color: var(--blood-red);
+    color: var(--blood-red);
+    background: rgba(255, 45, 45, 0.06);
+    box-shadow: 0 0 20px rgba(255, 45, 45, 0.1);
+  }
+
+  /* ── Mutation examples ── */
+  .mutation-example {
+    background: var(--bg-surface);
+    border-radius: 10px;
+    padding: 14px 28px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.56em;
+    border: 1px solid var(--border);
+    transition: border-color 0.3s ease;
+  }
+
+  .mutation-example:hover {
+    border-color: #2a3a30;
+  }
+
+  .mutation-example .before { color: var(--ci-green); }
+
+  .mutation-example .arrow {
+    color: #2a3a30;
+    font-size: 1.3em;
+  }
+
+  .mutation-example .after { color: var(--blood-red); }
+
+  .mutation-example .label {
+    color: var(--text-dim);
+    font-style: italic;
+    margin-left: auto;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95em;
+  }
+
+  /* ── Two columns ── */
+  .two-cols {
+    display: flex;
+    gap: 36px;
+    margin-top: 16px;
+  }
+
+  .two-cols .col { flex: 1; }
+
+  /* ── Problem → Solution ── */
+  .problem-solution {
+    margin: 14px 0;
+    font-size: 0.6em;
+    text-align: left;
+  }
+
+  .problem-solution .row {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+    margin: 14px 0;
+    padding: 18px 24px;
+    background: var(--bg-surface);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    transition: border-color 0.3s ease;
+  }
+
+  .problem-solution .problem {
+    color: var(--soft-red);
+    font-weight: 600;
+    min-width: 180px;
+  }
+
+  .problem-solution .solution { color: var(--ci-green); }
+  .problem-solution .ref { color: var(--text-dim); font-size: 0.85em; }
+
+  /* ── Punchline ── */
+  .punchline {
+    color: var(--toxic-green);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.82em;
+    margin-top: 24px;
+    text-align: center;
+    text-shadow: 0 0 30px rgba(57, 255, 20, 0.2);
+    letter-spacing: -0.01em;
+  }
+
+  /* ── Limits ── */
+  .limit-group h3 {
+    font-size: 0.9em;
+    margin-bottom: 0.3em;
+  }
+
+  .limit-item {
+    font-size: 0.58em;
+    margin: 8px 0;
+    padding: 12px 16px;
+    background: var(--bg-surface);
+    border-radius: 8px;
+    border-left: 3px solid #1c2c24;
+    color: var(--text-dim);
+    text-align: left;
+  }
+
+  .limit-item strong {
+    color: var(--text-main);
+    font-weight: 600;
+  }
+
+  /* ── Final / CTA box ── */
+  .final-box {
+    background: var(--bg-surface);
+    border: 1px solid var(--toxic-green);
+    border-radius: 12px;
+    padding: 18px 28px;
+    margin: 12px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65em;
+    color: var(--toxic-green);
+    text-align: center;
+    box-shadow: 0 0 30px rgba(57, 255, 20, 0.08);
+  }
+
+  /* ── Code swap (mutation cross-fade) ── */
+  .code-swap { display: grid; }
+  .code-swap > * { grid-area: 1 / 1; }
+
+  .reveal pre.mutated {
+    border-color: var(--blood-red) !important;
+  }
+
+  .reveal pre.mutated::before {
+    background: linear-gradient(90deg, transparent, rgba(255, 45, 45, 0.2), transparent);
+  }
+
+  .reveal pre.original {
+    border-color: var(--ci-green) !important;
+  }
+
+  .reveal pre.original::before {
+    background: linear-gradient(90deg, transparent, rgba(63, 185, 80, 0.15), transparent);
+  }
+
+  .status-swap { display: grid; }
+  .status-swap > * { grid-area: 1 / 1; }
+  .status-swap .dim { color: #c9d1d9; }
+
+  /* ── Git diff : ligne mutée dans son contexte ── */
+  .reveal pre.git-diff {
+    align-self: center;
+    justify-self: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.48em;
+    text-align: left;
+    padding: 18px 24px;
+    background: #272822;
+    border-radius: 10px;
+    line-height: 1.5;
+    white-space: pre;
+  }
+  .git-diff .d-ctx { display: block; color: #c9d1d9; }
+  .git-diff .d-del { display: block; color: #ff6b6b; background: rgba(255, 45, 45, 0.14); }
+  .git-diff .d-add { display: block; color: #56d364; background: rgba(63, 185, 80, 0.14); }
+
+  /* Slides mutants : code + test s'arrêtent au bord gauche du portrait (à droite) */
+  .reveal .code-swap,
+  .reveal .code-swap ~ pre {
+    width: 50%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: auto;
+  }
+
+  /* ── Portrait du mutant (avis de recherche) ── */
+  .mutant-portrait {
+    position: absolute;
+    top: 50%;
+    right: 9%;
+    transform: translateY(-50%);
+    width: 230px;
+    height: 300px;
+    object-fit: cover;
+    object-position: center top;
+    border: none;
+    box-shadow: none;
+    background: none;
+    border-radius: 12px;
+    z-index: 5;
+  }
+
+  /* ── Badges ── */
+  .mutant-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ff2d2d 0%, #cc1111 100%);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.4em;
+    font-weight: 700;
+    padding: 3px 14px;
+    border-radius: 20px;
+    margin-left: 12px;
+    vertical-align: middle;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    box-shadow: 0 2px 12px rgba(255, 45, 45, 0.3);
+  }
+
+  .test-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #3fb950 0%, #2ea043 100%);
+    color: #0d1117;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.4em;
+    font-weight: 700;
+    padding: 3px 14px;
+    border-radius: 20px;
+    margin-left: 12px;
+    vertical-align: middle;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* ── Utility colors ── */
+  .reveal .dim { color: var(--text-dim); }
+  .reveal .green { color: var(--toxic-green); }
+  .reveal .red { color: var(--blood-red); }
+
+  /* ── Fragments ── */
+  .reveal .fragment.grow-in {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .reveal .fragment.grow-in.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* ── Vignette ── */
+  .reveal .slide-background::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.4) 100%);
+    pointer-events: none;
+  }
+
+  /* ── Scrollbar (for overflow slides) ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1c2c24; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ============ SLIDE 1: TITRE ============ -->
+<section class="title-slide" data-background-color="#07090a">
+  <span class="virus-icon">🦠</span>
+  <h1>Infectez votre code,<br>immunisez votre prod</h1>
+  <div class="title-divider"></div>
+  <div class="subtitle">Ou comment découvrir que vos tests ne testent rien depuis 6 mois</div>
+  <div class="author">
+    Guillaume — [Meetup] — [Date]
+  </div>
+  <div class="title-mutants">
+    <img src="img/mutant-nightcrawler.png" alt="" onerror="this.style.display='none'">
+    <img src="img/mutant-mystique.png" alt="" onerror="this.style.display='none'">
+    <img src="img/mutant-rogue.png" alt="" onerror="this.style.display='none'">
+    <img src="img/mutant-wolverine.png" alt="" onerror="this.style.display='none'">
+    <img src="img/mutant-jubilee.png" alt="" onerror="this.style.display='none'">
+    <img src="img/mutant-magneto.png" alt="" onerror="this.style.display='none'">
+    <img src="img/mutant-quicksilver.png" alt="" onerror="this.style.display='none'">
+  </div>
+</section>
+
+<!-- ============ SLIDE 2a: L'AVEU — SETUP ============ -->
+<section class="big-statement aveu-slide" data-background-color="#07090a">
+  <div>
+    <p class="aveu-prelude">Commençons par un aveu…</p>
+    <!-- Mème suggestion : Confession Bear / Awkward Monkey -->
+    <img src="img/meme-aveu.jpg" alt="" class="aveu-meme" onerror="this.style.display='none'">
+  </div>
+</section>
+
+<!-- ============ SLIDE 2b: L'AVEU — PUNCHLINE ============ -->
+<section class="big-statement aveu-slide" data-background-color="#07090a" style="display: flex !important; flex-direction: column; justify-content: center; height: 100%;">
+  <div>
+    <h1 class="aveu-text">Les tests<br>c'est <span class="aveu-chiant">chiant</span>.</h1>
+    <!-- Mème suggestion : "I'm in this photo and I don't like it" / The Office -->
+    <img src="img/meme-chiant.jpg" alt="" class="aveu-meme" onerror="this.style.display='none'">
+  </div>
+</section>
+
+<!-- ============ SLIDE 3: LE SCÉNARIO — VERSION CLASSIQUE ============ -->
+<section data-background-color="#07090a">
+  <h2>Le scénario du quotidien</h2>
+
+  <div class="fragment dialogue">
+    <div class="line active">— Tu push ta PR…</div>
+  </div>
+
+  <div class="fragment">
+    <div class="ci-block">
+      <span class="ci-fail">✗ Coverage decreased: 78% → 74%</span><br>
+      <span class="ci-dim">Minimum required: 80%</span>
+    </div>
+  </div>
+
+  <div class="fragment dialogue">
+    <div class="line active">— Tu fais ce qu'on fait tous : t'écris un test. Vite.</div>
+  </div>
+
+  <div class="fragment">
+    <div class="ci-block">
+      <span class="ci-pass">✓ Tests passed</span><br>
+      <span class="ci-pass">✓ Coverage: 81%</span><br>
+      <span class="ci-pass">✓ Pipeline passed</span>
+    </div>
+  </div>
+
+  <div class="fragment dialogue">
+    <div class="line active">— Mergé. 🎉</div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 4: VERSION MAINTENANT ============ -->
+<section data-background-color="#07090a" style="display: flex !important; flex-direction: column; justify-content: center; height: 100%;">
+  <h2>Le scénario du <span class="green">CLAUDE</span>-tidien</h2>
+
+  <div class="fragment dialogue" style="margin-top: 20px;">
+    <div class="line active">— Tu push ta PR…</div>
+  </div>
+
+  <div class="fragment">
+    <div class="ci-block">
+      <span class="ci-fail">✗ Coverage decreased: 78% → 74%</span><br>
+      <span class="ci-dim">Minimum required: 80%</span>
+    </div>
+  </div>
+
+  <div class="fragment dialogue" style="margin-top: 16px;">
+    <div class="line active">— "Claude, génère-moi un test"</div>
+  </div>
+
+  <div class="fragment">
+    <div class="ci-block">
+      <span class="ci-pass">✓ Tests passed</span><br>
+      <span class="ci-pass">✓ Coverage: 81%</span><br>
+      <span class="ci-pass">✓ Pipeline passed</span>
+    </div>
+  </div>
+
+  <div class="fragment dialogue" style="margin-top: 16px;">
+    <div class="line active">— Mergé en 30 secondes. 🚀</div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 5: L'ANECDOTE ============ -->
+<section data-background-color="#07090a">
+  <h2>L'histoire qui fait mal 😱</h2>
+
+  <div class="fragment">
+    <div class="slack-block">
+      <div class="slack-msg">
+        <span class="slack-user">#incidents</span>
+        <span class="slack-text">Les montants affichés sur les factures ne correspondent pas aux prélèvements.</span>
+      </div>
+      <div class="slack-msg">
+        <span class="slack-user">@finance</span>
+        <span class="slack-text">Écarts de quelques centimes par ligne. ×50 000 factures/mois = 8K€ de delta.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment">
+    <pre><code class="language-php">// Le code — un "petit refacto" a supprimé l'arrondi
+return round($price * $quantity * (1 + $taxRate), 2);  // ← avant
+return $price * $quantity * (1 + $taxRate);             // ← après</code></pre>
+  </div>
+
+  <div class="fragment">
+    <pre><code class="language-php">// Le test — assertion exacte, valeurs rondes
+public function testTotalWithTax(): void
+{
+    // 10.00 * 5 * 1.20 = 60.0 — avec ou sans round()
+    $this->assertSame(60.0, $this->calc->total(10.00, 5, 0.20));
+}</code></pre>
+    <p class="dim" style="font-size: 0.55em; margin-top: 8px;">
+      Avec des prix ronds, <code>round()</code> ne change rien.
+      <span class="red">Avec 19.99 × 3 × 1.055 = 63.268… → le centime manque.</span>
+    </p>
+  </div>
+
+  <div class="fragment">
+    <p class="dim" style="font-size: 0.55em;">
+      Les tests générés par LLM → <span class="red" style="font-weight:700;">20% de mutation score</span> en moyenne
+      <span style="font-size:0.85em;">— Huang et al., 2025</span>
+    </p>
+  </div>
+
+  <div class="fragment punchline">
+    Test solide. Assertion exacte. Données trop propres.<br>
+    Et si on avait un outil qui supprime le <code>round()</code> pour voir si le test s'en rend compte ?
+  </div>
+</section>
+
+<!-- ============ SLIDE 6: ET SI ON SABOTAIT LE CODE ============ -->
+<section data-background-color="#07090a">
+  <h2>Et si on sabotait le code ? 🔧</h2>
+
+  <div class="fragment dialogue">
+    <div class="line active">— Imaginons un stagiaire malveillant.</div>
+  </div>
+
+  <div class="fragment dialogue">
+    <div class="line active">— Il modifie votre code, discrètement, une ligne à la fois.</div>
+  </div>
+
+  <div class="fragment dialogue">
+    <div class="line active">— Si vos tests passent toujours…<br>
+      &nbsp;&nbsp;c'est qu'ils ne surveillaient <span class="red">rien</span>.</div>
+  </div>
+
+  <div class="fragment">
+    <p class="punchline">Bonne nouvelle : on peut automatiser ce stagiaire.</p>
+  </div>
+</section>
+
+<!-- ============ SLIDE 7: MUTATION TESTING — LE PRINCIPE ============ -->
+<section data-background-color="#07090a">
+  <h2>Mutation Testing <span class="dim">— le principe</span></h2>
+  <p class="dim" style="font-size: 0.55em; margin-top: -10px; margin-bottom: 20px;">Comme les X-Men, mais dans votre codebase. Et on veut les éliminer.</p>
+
+  <div class="pipeline">
+    <div class="fragment pipeline-step">
+      <span class="step-icon">📄</span>
+      Code original
+      <span class="step-label">Votre code, tel quel</span>
+    </div>
+    <div class="fragment pipeline-connector"></div>
+    <div class="fragment pipeline-step mutant">
+      <span class="step-icon">🧬</span>
+      Mutant
+      <span class="step-label">Une micro-modification</span>
+    </div>
+    <div class="fragment pipeline-connector"></div>
+    <div class="fragment pipeline-step">
+      <span class="step-icon">🧪</span>
+      Tests
+      <span class="step-label">Votre suite de tests</span>
+    </div>
+    <div class="fragment pipeline-connector"></div>
+    <div class="fragment pipeline-fork">
+      <div class="fork-branch top">
+        <div class="fork-line"></div>
+        <div class="pipeline-step killed">
+          <span class="step-icon">💀</span>
+          Killed
+        </div>
+      </div>
+      <div class="fork-branch bottom">
+        <div class="fork-line"></div>
+        <div class="pipeline-step escaped">
+          <span class="step-icon">🏃</span>
+          Escaped
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment" style="text-align: center;">
+    <p style="font-size: 0.7em;">
+      <span class="green">Killed</span> = Wolverine neutralisé par vos tests &nbsp;&nbsp;|&nbsp;&nbsp;
+      <span class="red">Escaped</span> = Mystique est passée entre les mailles
+    </p>
+  </div>
+
+  <div class="fragment" style="text-align: center;">
+    <p style="font-size: 0.8em;">
+      <strong class="green">MSI</strong> <span class="dim">(Mutation Score Indicator)</span> = % de mutants éliminés
+    </p>
+    <p class="dim" style="font-size: 0.55em; margin-top: 4px;">Le vrai bulletin de notes de vos tests — pas le coverage</p>
+  </div>
+</section>
+
+<!-- ============ SLIDE 8a: MUTANTS — LES CLASSIQUES ============ -->
+<section data-background-color="#07090a">
+  <h2>À quoi ressemble un mutant ?</h2>
+
+  <div class="fragment">
+    <div class="mutation-example">
+      <span class="before">$a + $b</span>
+      <span class="arrow">→</span>
+      <span class="after">$a - $b</span>
+      <span class="label">Le classique</span>
+    </div>
+  </div>
+
+  <div class="fragment">
+    <div class="mutation-example">
+      <span class="before">$a && $b</span>
+      <span class="arrow">→</span>
+      <span class="after">$a || $b</span>
+      <span class="label">Le logicien</span>
+    </div>
+  </div>
+
+  <div class="fragment">
+    <div class="mutation-example">
+      <span class="before">$age >= 18</span>
+      <span class="arrow">→</span>
+      <span class="after">$age > 18</span>
+      <span class="label">Le vicieux</span>
+    </div>
+  </div>
+
+  <div class="fragment" style="margin-top: 30px;">
+    <p class="dim" style="font-size: 0.7em; text-align: center;">
+      Ceux-là, on peut les voir à l'œil.<br>Les suivants, non.
+    </p>
+  </div>
+</section>
+
+<!-- ======= LE SILENCIEUX ======= -->
+<section data-background-color="#07090a">
+  <h2>Le silencieux <span class="dim" style="font-size: 0.5em;">🌀 Nightcrawler</span></h2>
+  <img class="mutant-portrait" src="img/mutant-nightcrawler.png" alt="Nightcrawler" onerror="this.style.display='none'">
+  <div class="code-swap">
+    <pre class="original fragment fade-out" data-fragment-index="0" style="font-size: 0.48em;"><code data-trim class="language-php">function getActiveUsers(array $users): Generator
+{
+    foreach ($users as $user) {
+        if ($user->isActive()) {
+            yield $user;
+        }
+    }
+}</code></pre>
+    <pre class="mutated fragment git-diff" data-fragment-index="0"><span class="d-ctx"> function getActiveUsers(array $users): Generator</span><span class="d-ctx"> {</span><span class="d-ctx">     foreach ($users as $user) {</span><span class="d-ctx">         if ($user->isActive()) {</span><span class="d-del">-            yield $user;</span><span class="d-add">+            // supprimé</span><span class="d-ctx">         }</span><span class="d-ctx">     }</span><span class="d-ctx"> }</span></pre>
+  </div>
+  <pre style="font-size: 0.48em;"><code data-trim class="language-php">public function testFiltersOutInactiveUsers(): void
+{
+    $users = [new User('Bob', active: false), new User('Eve', active: false)];
+    $result = iterator_to_array(getActiveUsers($users));
+    $this->assertEmpty($result);
+    $this->assertCount(0, $result);
+}</code></pre>
+  <div class="status-swap">
+    <p class="fragment fade-out" data-fragment-index="0" style="font-size: 0.6em;"><span class="test-badge">TEST ✅</span> <span class="dim">Assertions exactes, test solide</span></p>
+    <p class="punchline fragment" data-fragment-index="0" style="font-size: 0.6em;">Avec 0 actifs, yield n'est jamais atteint. Supprimé ou pas → même résultat.</p>
+  </div>
+</section>
+
+<!-- ======= L'IMPOSTEUR ======= -->
+<section data-background-color="#07090a">
+  <h2>L'imposteur <span class="dim" style="font-size: 0.5em;">🎭 Mystique</span></h2>
+  <img class="mutant-portrait" src="img/mutant-mystique.png" alt="Mystique" onerror="this.style.display='none'">
+  <div class="code-swap">
+    <pre class="original fragment fade-out" data-fragment-index="0" style="font-size: 0.48em;"><code data-trim class="language-php">function extractTags(array $articles): array
+{
+    $tags = array_merge(...array_map(fn($a) => $a->getTags(), $articles));
+    return array_unique($tags);
+}</code></pre>
+    <pre class="mutated fragment git-diff" data-fragment-index="0"><span class="d-ctx"> function extractTags(array $articles): array</span><span class="d-ctx"> {</span><span class="d-ctx">     $tags = array_merge(...array_map(fn($a) => $a->getTags(), $articles));</span><span class="d-del">-    return array_unique($tags);</span><span class="d-add">+    return $tags;</span><span class="d-ctx"> }</span></pre>
+  </div>
+  <pre style="font-size: 0.48em;"><code data-trim class="language-php">public function testExtractTagsFromArticles(): void
+{
+    $articles = [
+        new Article(tags: ['php', 'testing']),
+        new Article(tags: ['ci', 'devops']),
+    ];
+    $result = extractTags($articles);
+    $this->assertCount(4, $result);
+    $this->assertContains('php', $result);
+}</code></pre>
+  <div class="status-swap">
+    <p class="fragment fade-out" data-fragment-index="0" style="font-size: 0.6em;"><span class="test-badge">TEST ✅</span> <span class="dim">Count exact, valeurs vérifiées</span></p>
+    <p class="punchline fragment" data-fragment-index="0" style="font-size: 0.6em;">Fixtures sans doublons → array_unique est un no-op. En prod, les tags se répètent.</p>
+  </div>
+</section>
+
+<!-- ======= LE PARASITE ======= -->
+<section data-background-color="#07090a">
+  <h2>Le parasite <span class="dim" style="font-size: 0.5em;">🧤 Rogue</span></h2>
+  <img class="mutant-portrait" src="img/mutant-rogue.png" alt="Rogue" onerror="this.style.display='none'">
+  <div class="code-swap">
+    <pre class="original fragment fade-out" data-fragment-index="0" style="font-size: 0.48em;"><code data-trim class="language-php">function archiveOrder(Order $order): Order
+{
+    $archived = clone $order;
+    $archived->setStatus('archived');
+    $archived->setArchivedAt(new \DateTimeImmutable());
+    $this->repository->save($archived);
+    return $archived;
+}</code></pre>
+    <pre class="mutated fragment git-diff" data-fragment-index="0"><span class="d-ctx"> function archiveOrder(Order $order): Order</span><span class="d-ctx"> {</span><span class="d-del">-    $archived = clone $order;</span><span class="d-add">+    $archived = $order;</span><span class="d-ctx">     $archived->setStatus('archived');</span><span class="d-ctx">     $archived->setArchivedAt(new \DateTimeImmutable());</span><span class="d-ctx">     $this->repository->save($archived);</span><span class="d-ctx">     return $archived;</span><span class="d-ctx"> }</span></pre>
+  </div>
+  <pre style="font-size: 0.48em;"><code data-trim class="language-php">public function testArchiveOrderSetsStatusAndDate(): void
+{
+    $order = new Order(id: 42, status: 'active');
+    $archived = $this->service->archiveOrder($order);
+    $this->assertSame('archived', $archived->getStatus());
+    $this->assertNotNull($archived->getArchivedAt());
+}</code></pre>
+  <div class="status-swap">
+    <p class="fragment fade-out" data-fragment-index="0" style="font-size: 0.6em;"><span class="test-badge">TEST ✅</span> <span class="dim">Status et date vérifiés</span></p>
+    <p class="punchline fragment" data-fragment-index="0" style="font-size: 0.6em;">Le test vérifie $archived, jamais $order. Sans clone, les deux sont le même objet.</p>
+  </div>
+</section>
+
+<!-- ======= L'AVALEUR ======= -->
+<section data-background-color="#07090a">
+  <h2>L'assassin <span class="dim" style="font-size: 0.5em;">🗡️ Wolverine</span></h2>
+  <img class="mutant-portrait" src="img/mutant-wolverine.png" alt="Wolverine" onerror="this.style.display='none'">
+  <div class="code-swap">
+    <pre class="original fragment fade-out" data-fragment-index="0" style="font-size: 0.48em;"><code data-trim class="language-php">function processPayment(Order $order): void
+{
+    try {
+        $this->gateway->charge($order->total);
+    } catch (InsufficientFundsException $e) {
+        $this->logger->error('Payment failed', ['order' => $order->id]);
+        throw $e;
+    }
+    $order->setStatus('paid');
+}</code></pre>
+    <pre class="mutated fragment git-diff" data-fragment-index="0"><span class="d-ctx"> function processPayment(Order $order): void</span><span class="d-ctx"> {</span><span class="d-ctx">     try {</span><span class="d-ctx">         $this->gateway->charge($order->total);</span><span class="d-ctx">     } catch (InsufficientFundsException $e) {</span><span class="d-ctx">         $this->logger->error('Payment failed', ['order' => $order->id]);</span><span class="d-del">-        throw $e;</span><span class="d-add">+        // supprimé</span><span class="d-ctx">     }</span><span class="d-ctx">     $order->setStatus('paid');</span><span class="d-ctx"> }</span></pre>
+  </div>
+  <pre style="font-size: 0.48em;"><code data-trim class="language-php">public function testSuccessfulPaymentSetsStatusToPaid(): void
+{
+    $order = new Order(id: 1, total: 50.0);
+    $this->gateway->method('charge');  // pas d'exception
+    $this->service->processPayment($order);
+    $this->assertSame('paid', $order->getStatus());
+}</code></pre>
+  <div class="status-swap">
+    <p class="fragment fade-out" data-fragment-index="0" style="font-size: 0.6em;"><span class="test-badge">TEST ✅</span> <span class="dim">Happy path, assertion exacte</span></p>
+    <p class="punchline fragment" data-fragment-index="0" style="font-size: 0.6em;">Le test ne provoque jamais l'exception → throw jamais atteint. En prod : commandes gratuites.</p>
+  </div>
+</section>
+
+<!-- ======= LE NAÏF ======= -->
+<section data-background-color="#07090a">
+  <h2>Le naïf <span class="dim" style="font-size: 0.5em;">🎆 Jubilee</span></h2>
+  <img class="mutant-portrait" src="img/mutant-jubilee.png" alt="Jubilee" onerror="this.style.display='none'">
+  <div class="code-swap">
+    <pre class="original fragment fade-out" data-fragment-index="0" style="font-size: 0.48em;"><code data-trim class="language-php">function getDisplayName(User $user): string
+{
+    return $user->nickname
+        ?? $user->fullName
+        ?? 'Utilisateur anonyme';
+}</code></pre>
+    <pre class="mutated fragment git-diff" data-fragment-index="0"><span class="d-ctx"> function getDisplayName(User $user): string</span><span class="d-ctx"> {</span><span class="d-del">-    return $user->nickname</span><span class="d-del">-        ?? $user->fullName</span><span class="d-del">-        ?? 'Utilisateur anonyme';</span><span class="d-add">+    return $user->nickname;</span><span class="d-ctx"> }</span></pre>
+  </div>
+  <pre style="font-size: 0.48em;"><code data-trim class="language-php">public function testDisplayNameReturnsNickname(): void
+{
+    $user = new User(nickname: 'devgirl', fullName: 'Alice Martin');
+    $this->assertSame('devgirl', getDisplayName($user));
+}</code></pre>
+  <div class="status-swap">
+    <p class="fragment fade-out" data-fragment-index="0" style="font-size: 0.6em;"><span class="test-badge">TEST ✅</span> <span class="dim">Valeur exacte vérifiée</span></p>
+    <p class="punchline fragment" data-fragment-index="0" style="font-size: 0.6em;">Le user a un nickname → avec ou sans ??, même résultat. Crash sur les 2% sans pseudo.</p>
+  </div>
+</section>
+
+<!-- ======= L'INVERSEUR ======= -->
+<section data-background-color="#07090a">
+  <h2>L'inverseur <span class="dim" style="font-size: 0.5em;">🧲 Magneto</span></h2>
+  <img class="mutant-portrait" src="img/mutant-magneto.png" alt="Magneto" onerror="this.style.display='none'">
+  <div class="code-swap">
+    <pre class="original fragment fade-out" data-fragment-index="0" style="font-size: 0.48em;"><code data-trim class="language-php">function accessDashboard(User $user): Response
+{
+    if (!$user->isBanned()) {
+        return $this->render('dashboard');
+    }
+    return $this->render('banned_notice');
+}</code></pre>
+    <pre class="mutated fragment git-diff" data-fragment-index="0"><span class="d-ctx"> function accessDashboard(User $user): Response</span><span class="d-ctx"> {</span><span class="d-del">-    if (!$user->isBanned()) {</span><span class="d-add">+    if ($user->isBanned()) {</span><span class="d-ctx">         return $this->render('dashboard');</span><span class="d-ctx">     }</span><span class="d-ctx">     return $this->render('banned_notice');</span><span class="d-ctx"> }</span></pre>
+  </div>
+  <pre style="font-size: 0.48em;"><code data-trim class="language-php">public function testActiveUserCanAccessDashboard(): void
+{
+    $user = new User(banned: false);
+    $response = $this->controller->accessDashboard($user);
+    $this->assertSame(200, $response->getStatusCode());
+}</code></pre>
+  <div class="status-swap">
+    <p class="fragment fade-out" data-fragment-index="0" style="font-size: 0.6em;"><span class="test-badge">TEST ✅</span> <span class="dim">Status code vérifié</span></p>
+    <p class="punchline fragment" data-fragment-index="0" style="font-size: 0.6em;">Les deux branches rendent un 200. Le test vérifie le status, pas le contenu.</p>
+  </div>
+</section>
+
+<!-- ======= LE DYSLEXIQUE ======= -->
+<section data-background-color="#07090a">
+  <h2>Le dyslexique <span class="dim" style="font-size: 0.5em;">⚡ Quicksilver</span></h2>
+  <img class="mutant-portrait" src="img/mutant-quicksilver.png" alt="Quicksilver" onerror="this.style.display='none'">
+  <div class="code-swap">
+    <pre class="original fragment fade-out" data-fragment-index="0" style="font-size: 0.48em;"><code data-trim class="language-php">function getShippingCost(Order $order): float
+{
+    return $order->isExpress()
+        ? $order->weight * 2.50   // tarif express
+        : $order->weight * 1.00;  // tarif standard
+}</code></pre>
+    <pre class="mutated fragment git-diff" data-fragment-index="0"><span class="d-ctx"> function getShippingCost(Order $order): float</span><span class="d-ctx"> {</span><span class="d-ctx">     return $order->isExpress()</span><span class="d-del">-        ? $order->weight * 2.50   // express</span><span class="d-del">-        : $order->weight * 1.00;  // standard</span><span class="d-add">+        ? $order->weight * 1.00   // (interverti)</span><span class="d-add">+        : $order->weight * 2.50;  // (interverti)</span><span class="d-ctx"> }</span></pre>
+  </div>
+  <pre style="font-size: 0.48em;"><code data-trim class="language-php">public function testDigitalGoodsHaveNoShippingCost(): void
+{
+    $order = new Order(weight: 0.0, express: false);
+    $this->assertSame(0.0, getShippingCost($order));
+}</code></pre>
+  <div class="status-swap">
+    <p class="fragment fade-out" data-fragment-index="0" style="font-size: 0.6em;"><span class="test-badge">TEST ✅</span> <span class="dim">Assertion exacte, cas edge réaliste</span></p>
+    <p class="punchline fragment" data-fragment-index="0" style="font-size: 0.6em;">Avec weight = 0, les deux branches donnent 0.0. Le mutant survit.</p>
+  </div>
+</section>
+
+<!-- ============ SLIDE 8j: COVERAGE VS MSI ============ -->
+<section data-background-color="#07090a">
+  <h2>Coverage ≠ qualité</h2>
+
+  <div class="fragment">
+    <pre><code class="language-php">function applyDiscount(float $price, float $rate): float
+{
+    if ($rate > 0.5) {
+        throw new \InvalidArgumentException('Max 50%');
+    }
+    return $price * (1 - $rate);
+}</code></pre>
+  </div>
+
+  <div class="fragment">
+    <div class="two-cols" style="margin-top: 20px;">
+      <div class="col" style="text-align: center;">
+        <h3 style="color: var(--soft-red);">Test A</h3>
+        <pre style="font-size: 0.48em;"><code class="language-php">$result = applyDiscount(100, 0.2);
+$this->assertIsFloat($result);</code></pre>
+        <p style="font-size: 0.7em; margin-top: 10px;">
+          Coverage : <span class="green">100%</span><br>
+          MSI : <span class="red">0%</span>
+        </p>
+      </div>
+      <div class="col" style="text-align: center;">
+        <h3 style="color: var(--toxic-green);">Test B</h3>
+        <pre style="font-size: 0.48em;"><code class="language-php">$result = applyDiscount(100, 0.2);
+$this->assertSame(80.0, $result);</code></pre>
+        <p style="font-size: 0.7em; margin-top: 10px;">
+          Coverage : <span class="green">100%</span><br>
+          MSI : <span class="green">85%</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment punchline">
+    Même coverage. Qualité radicalement différente.
+  </div>
+</section>
+
+<!-- ============ SLIDE 9: UN EXEMPLE CONCRET ============ -->
+<section class="big-statement" data-background-color="#07090a">
+  <div>
+    <p style="font-size: 0.7em; color: var(--text-dim);">Assez de théorie.</p>
+    <h1 style="color: var(--toxic-green); margin: 20px 0;">Un exemple concret</h1>
+    <div class="final-box" style="display: inline-block;">
+      composer require --dev infection/infection
+    </div>
+    <p style="font-size: 0.7em; color: var(--soft-red); margin-top: 20px;">Spoiler : ça va piquer. 💉</p>
+  </div>
+</section>
+
+<!-- ============ SLIDE 10b: DÉMO GUIDÉE — LE CODE ============ -->
+<section data-background-color="#07090a">
+  <h2>Démo — Le code 📝</h2>
+
+  <div class="two-cols">
+    <div class="col">
+      <h3>Le code</h3>
+      <pre style="font-size: 0.48em;"><code class="language-php">class PriceCalculator
+{
+    public function calculate(
+        float $price,
+        float $tax,
+        ?float $discount = null
+    ): float {
+        $total = $price * (1 + $tax);
+
+        if ($discount !== null
+            && $discount > 0) {
+            $total -= $total * $discount;
+        }
+
+        return round($total, 2);
+    }
+}</code></pre>
+    </div>
+    <div class="col">
+      <h3 style="color: var(--blood-red);">Le "test"</h3>
+      <pre style="font-size: 0.48em;"><code class="language-php">public function testCalculate(): void
+{
+    $calc = new PriceCalculator();
+
+    $result = $calc->calculate(
+        100, 0.2, 0.1
+    );
+
+    $this->assertIsFloat($result);
+    $this->assertGreaterThan(
+        0, $result
+    );
+}</code></pre>
+    </div>
+  </div>
+
+  <p class="dim" style="font-size: 0.6em; text-align: center; margin-top: 16px;">
+    Coverage : 100% ✓ — Mais est-ce que ça teste vraiment quelque chose ?
+  </p>
+</section>
+
+<!-- ============ SLIDE 10c: DÉMO GUIDÉE — INFECTION ============ -->
+<section data-background-color="#07090a">
+  <h2>Démo — Infection parle 🦠</h2>
+
+  <div class="ci-block" style="font-size: 0.6em; line-height: 1.7;">
+    <span class="ci-dim">$ vendor/bin/infection</span><br><br>
+    <span class="ci-pass">&nbsp;&nbsp;Killed: 3</span><br>
+    <span class="ci-fail">&nbsp;&nbsp;Escaped: 8</span><br><br>
+    <span class="ci-dim">&nbsp;&nbsp;MSI : </span><span class="ci-fail">25%</span><span class="ci-dim">&nbsp;&nbsp;|&nbsp;&nbsp;Coverage : </span><span class="ci-pass">100%</span>
+  </div>
+
+  <div class="fragment" style="margin-top: 16px; text-align: center;">
+    <img src="img/sentinelle-infection.png" alt="Une Sentinelle estampillée INFECTION traque les mutants, mais 8 lui échappent — les tests sont trop faibles"
+         class="aveu-meme" style="max-height: 200px; margin-top: 0;"
+         onerror="this.style.display='none'">
+  </div>
+</section>
+
+<!-- ============ SLIDE 10d: DÉMO GUIDÉE — ON CORRIGE ============ -->
+<section data-background-color="#07090a">
+  <h2>Démo — On corrige 💪</h2>
+
+  <div class="fragment">
+    <pre><code class="language-php">public function testCalculateWithDiscount(): void
+{
+    $calc = new PriceCalculator();
+    $result = $calc->calculate(100, 0.2, 0.1);
+    $this->assertSame(108.0, $result);  // prix exact attendu
+}
+
+public function testCalculateWithoutDiscount(): void
+{
+    $this->assertSame(120.0,
+        (new PriceCalculator())->calculate(100, 0.2)
+    );
+}
+
+public function testIgnoresNegativeDiscount(): void
+{
+    $result = (new PriceCalculator())->calculate(100, 0.2, -0.1);
+    $this->assertSame(120.0, $result);  // discount ignoré si <= 0
+}</code></pre>
+  </div>
+
+  <div class="fragment">
+    <div class="ci-block" style="font-size: 0.6em;">
+      <span class="ci-pass">MSI: 92% (+67 points)</span><br>
+      <span class="ci-dim">Escaped: 1 (mutant équivalent)</span>
+    </div>
+  </div>
+
+  <div class="fragment punchline">
+    Mêmes lignes de code. Tests qui testent vraiment.
+  </div>
+</section>
+
+<!-- ============ SLIDE 11: RETOUR DE DÉMO ============ -->
+<section data-background-color="#07090a">
+  <h2>Ce qu'on vient de voir</h2>
+
+  <div class="two-cols" style="margin-top: 30px;">
+    <div class="col fragment">
+      <h3>Mutants évidents 👀</h3>
+      <p style="font-size: 0.65em; color: var(--text-dim);">
+        On aurait pu les voir à l'œil.<br>
+        <code>+</code> → <code>-</code>, <code>true</code> → <code>false</code>…<br>
+        Utiles pour comprendre le concept.
+      </p>
+    </div>
+    <div class="col fragment">
+      <h3 style="color: var(--blood-red);">Mutants subtils 🫣</h3>
+      <p style="font-size: 0.65em; color: var(--text-dim);">
+        Sans outil, ils passent inaperçus.<br>
+        <code>&&</code> → <code>||</code>, suppression d'un <code>throw</code>…<br>
+        C'est là que le mutation testing brille.
+      </p>
+    </div>
+  </div>
+
+  <div class="fragment punchline" style="margin-top: 40px;">
+    Le MSI a monté en corrigeant les tests → preuve concrète.
+  </div>
+</section>
+
+<!-- ============ SLIDE 12: LES LIMITES ============ -->
+<section data-background-color="#07090a">
+  <h2>C'est pas magique non plus</h2>
+
+  <div class="two-cols" style="margin-top: 20px;">
+    <div class="col">
+      <div class="limit-group">
+        <h3>🎭 Les faux amis</h3>
+        <div class="fragment limit-item">
+          <strong>Mutants équivalents</strong><br>
+          Le code a changé, le comportement non → impossible à tuer
+        </div>
+        <div class="fragment limit-item">
+          <strong>Mutants triviaux</strong><br>
+          Du bruit, pas de valeur
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="limit-group">
+        <h3>⏱️ Les coûts</h3>
+        <div class="fragment limit-item">
+          <strong>Temps d'exécution</strong><br>
+          Chaque mutant = relancer les tests
+        </div>
+        <div class="fragment limit-item">
+          <strong>Infinite loops</strong><br>
+          Certains mutants cassent le flux → timeouts
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fragment dim" style="font-size: 0.6em; text-align: center; margin-top: 30px;">
+    Ça fait beaucoup de problèmes. Mais rappelez-vous la slide 4…<br>
+    L'IA créait le problème. Elle peut aussi aider à le résoudre.
+  </div>
+</section>
+
+<!-- ============ SLIDE 13: L'IA À LA RESCOUSSE ============ -->
+<section data-background-color="#07090a">
+  <h2>L'IA à la rescousse 🤖</h2>
+
+  <div class="problem-solution">
+    <div class="fragment row">
+      <span class="problem">🎭 Trop de bruit ?</span>
+      <span class="solution">
+        Meta ACH : un LLM détecte les mutants équivalents — précision 0.95
+        <br><span class="ref">— FSE 2025</span>
+      </span>
+    </div>
+    <div class="fragment row">
+      <span class="problem">🦠 Mutants pas réalistes ?</span>
+      <span class="solution">
+        Wukong : GPT-4o génère des mutants proches de vrais bugs — 93.4% de détection vs 51.3%
+        <br><span class="ref">— arXiv 2406.09843</span>
+      </span>
+    </div>
+    <div class="fragment row">
+      <span class="problem">🧪 Mutant escaped ?</span>
+      <span class="solution">
+        MuTAP : le mutant survivant est injecté dans le prompt → +28% de bugs détectés
+        <br><span class="ref">— Dakhel et al., 2024</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="fragment punchline" style="font-size: 0.7em;">
+    L'IA crée des tests faibles. Le mutation testing les expose. L'IA les corrige.<br>
+    La boucle est bouclée.
+  </div>
+</section>
+
+<!-- ============ SLIDE 14: EN PRATIQUE ============ -->
+<section data-background-color="#07090a">
+  <h2>En pratique, dans votre CI</h2>
+
+  <div class="fragment" style="margin-top: 30px;">
+    <p style="font-size: 0.75em;">Ne lancez <span class="red">pas</span> Infection sur tout le projet.</p>
+    <pre style="margin-top: 16px;"><code class="language-bash">vendor/bin/infection --git-diff-filter=AM --min-msi=70</code></pre>
+    <p class="dim" style="font-size: 0.6em; margin-top: 8px;">
+      Uniquement les fichiers ajoutés ou modifiés → rapide, ciblé.
+    </p>
+  </div>
+
+  <div class="fragment" style="margin-top: 40px;">
+    <div class="two-cols" style="text-align: center; font-size: 0.75em;">
+      <div class="col">
+        <p style="font-size: 1.4em;">📏</p>
+        <p><strong>Coverage</strong></p>
+        <p class="dim" style="font-size: 0.85em;">= quantité</p>
+        <p class="dim" style="font-size: 0.75em;">Quelles lignes sont exécutées</p>
+      </div>
+      <div class="col">
+        <p style="font-size: 1.4em;">🎯</p>
+        <p><strong class="green">MSI</strong></p>
+        <p class="dim" style="font-size: 0.85em;">= qualité</p>
+        <p class="dim" style="font-size: 0.75em;">Est-ce que les tests détectent les changements</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SLIDE 14b: ÉCOSYSTÈME ============ -->
+<section data-background-color="#07090a">
+  <h2>Pas que PHP — l'écosystème</h2>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 30px; font-size: 0.65em;">
+    <div class="fragment" style="background: var(--bg-card); border: 1px solid #21262d; border-radius: 8px; padding: 16px 20px;">
+      <strong class="green">PHP</strong> — Infection<br>
+      <span class="dim">Le plus mature, intégré CI, profils</span>
+    </div>
+    <div class="fragment" style="background: var(--bg-card); border: 1px solid #21262d; border-radius: 8px; padding: 16px 20px;">
+      <strong class="green">JS / TS</strong> — Stryker<br>
+      <span class="dim">Support Jest, Vitest, Mocha, Karma</span>
+    </div>
+    <div class="fragment" style="background: var(--bg-card); border: 1px solid #21262d; border-radius: 8px; padding: 16px 20px;">
+      <strong class="green">Java / Kotlin</strong> — PIT (pitest)<br>
+      <span class="dim">Plugins Maven &amp; Gradle, rapide</span>
+    </div>
+    <div class="fragment" style="background: var(--bg-card); border: 1px solid #21262d; border-radius: 8px; padding: 16px 20px;">
+      <strong class="green">Python</strong> — mutmut<br>
+      <span class="dim">Simple, cache intelligent, pytest natif</span>
+    </div>
+    <div class="fragment" style="background: var(--bg-card); border: 1px solid #21262d; border-radius: 8px; padding: 16px 20px;">
+      <strong class="green">C# / .NET</strong> — Stryker.NET<br>
+      <span class="dim">Même famille que Stryker JS</span>
+    </div>
+    <div class="fragment" style="background: var(--bg-card); border: 1px solid #21262d; border-radius: 8px; padding: 16px 20px;">
+      <strong class="green">Ruby</strong> — mutant<br>
+      <span class="dim">AST-based, RSpec intégré</span>
+    </div>
+  </div>
+
+  <div class="fragment punchline" style="font-size: 0.65em; margin-top: 30px;">
+    Peu importe votre stack — le concept s'applique partout.
+  </div>
+</section>
+
+<!-- ============ SLIDE 15: MERCI ============ -->
+<section class="big-statement" data-background-color="#07090a">
+  <div>
+    <p style="font-size: 1.2em;">🦠</p>
+    <h1 style="color: var(--toxic-green); font-size: 2em;">Merci !</h1>
+    <div class="final-box" style="display: inline-block; margin: 20px 0;">
+      composer require --dev infection/infection
+    </div>
+    <p class="dim" style="font-size: 0.55em; margin-top: 20px;">
+      📄 Infection : <span style="color: var(--text-main);">infection.github.io</span><br>
+      📄 MuTAP : <span style="color: var(--text-main);">github.com/ExpertiseModel/MuTAP</span><br>
+      📄 Meta ACH : <span style="color: var(--text-main);">arXiv 2501.12862</span>
+    </p>
+    <p style="font-size: 0.7em; margin-top: 30px;">Questions ? 🙋</p>
+  </div>
+</section>
+
+<!-- ============ SLIDE 16: CRÉDITS ============ -->
+<section data-background-color="#07090a" style="display: flex !important; flex-direction: column; justify-content: center; height: 100%;">
+  <h2>Crédits</h2>
+  <div style="font-size: 0.5em; line-height: 1.9; max-width: 78%; margin: 24px auto 0; text-align: left;">
+    <p>🦸 <strong>Personnages &amp; images X-Men</strong> — © Marvel Entertainment.<br>
+    <span class="dim">Portraits via Wikipédia / Wikimedia Commons · Sentinelle : couverture <em>X-Men: Schism</em> (Marvel). Usage éducatif et illustratif.</span></p>
+    <p>🧪 <strong>Mutation testing</strong> — <span class="dim">Infection — infection.github.io</span></p>
+    <p>🎞️ <strong>Slides</strong> — <span class="dim">reveal.js</span></p>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/highlight/highlight.min.js"></script>
+<script>
+Reveal.initialize({
+  hash: true,
+  slideNumber: true,
+  transition: 'fade',
+  transitionSpeed: 'fast',
+  backgroundTransition: 'none',
+  autoAnimateDuration: 0.7,
+  autoAnimateEasing: 'ease-in-out',
+  autoAnimateUnmatched: false,
+  center: false,
+  width: 1920,
+  height: 1080,
+  margin: 0,
+  minScale: 0.2,
+  maxScale: 2.0,
+  plugins: [RevealHighlight]
+});
+</script>
+</body>
+</html>
