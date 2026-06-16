@@ -131,6 +131,7 @@
   .reveal pre code {
     max-height: none;
     line-height: 1.5;
+    background: transparent !important;
   }
 
   .reveal .slides section[data-background-color] {
@@ -643,21 +644,7 @@
   .code-swap { display: grid; }
   .code-swap > * { grid-area: 1 / 1; }
 
-  .reveal pre.mutated {
-    border-color: var(--blood-red) !important;
-  }
-
-  .reveal pre.mutated::before {
-    background: linear-gradient(90deg, transparent, rgba(255, 45, 45, 0.2), transparent);
-  }
-
-  .reveal pre.original {
-    border-color: var(--ci-green) !important;
-  }
-
-  .reveal pre.original::before {
-    background: linear-gradient(90deg, transparent, rgba(63, 185, 80, 0.15), transparent);
-  }
+  /* Bordures + accent des blocs de code : homogènes via .reveal pre (base), pas de rouge/vert */
 
   .status-swap { display: grid; }
   .status-swap > * { grid-area: 1 / 1; }
